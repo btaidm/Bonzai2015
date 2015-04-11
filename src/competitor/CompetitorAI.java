@@ -14,6 +14,7 @@ import snowbound.api.Action;
 import snowbound.api.Agent;
 import snowbound.api.Base;
 import snowbound.api.CaptureAction;
+import snowbound.api.Direction;
 import snowbound.api.GatherAction;
 import snowbound.api.MoveAction;
 import snowbound.api.Pathfinding;
@@ -68,7 +69,7 @@ public class CompetitorAI extends AI
         if (init)
             return;
         maxUnits = turn.myUnits().size();
-        //System.err.println("MAX UNITS: " + maxUnits);
+        // System.err.println("MAX UNITS: " + maxUnits);
         Collection<Unit> myRoster = Utility.intersect(turn.roster(),
                 turn.myUnits());
         for (Unit unit : myRoster)
@@ -90,12 +91,12 @@ public class CompetitorAI extends AI
                     // //System.out.println("Spawning LAYERS");
                     // perks.put(unit, Perk.PITCHER);
                     // } else
-                    if (numOfLayers < 1)
-                    {
-                        numOfLayers++;
-                        ////System.out.println("Spawning LAYERS");
-                        perks.put(unit, Perk.LAYERS);
-                    } else
+//                    if (numOfLayers < 1)
+//                    {
+//                        numOfLayers++;
+//                        // //System.out.println("Spawning LAYERS");
+//                        perks.put(unit, Perk.LAYERS);
+//                    } else
                     {
                         perks.put(unit, Perk.CLEATS);
                     }
@@ -169,7 +170,7 @@ public class CompetitorAI extends AI
         if (player.isSpawned())
             return null;
 
-        ////System.err.println(perks.get(player).toString());
+        // //System.err.println(perks.get(player).toString());
         goals.put(player, new EmptyGoal());
         Collection<Tile> spawns = Utility.retain(
                 turn.tilesAt(turn.myTeam().spawns()), new TileIsPassable(turn));
@@ -390,7 +391,7 @@ public class CompetitorAI extends AI
 
                     if (!eOnB.isEmpty() || eOnB.size() != 0)
                     {
-                        //System.out.println("New Base needed");
+                        // System.out.println("New Base needed");
                         Collection<Base> bases = turn.allBases();
                         bases = Utility.filter(bases, new Owned(turn.myTeam()));
 
@@ -402,9 +403,9 @@ public class CompetitorAI extends AI
                             action = new ShoutAction("No uncaptured Bases");
                             break;
                         }
-                        //System.out.println("Found new Base1");
+                        // System.out.println("Found new Base1");
                         goal = new BaseGoal((Base) bases.toArray()[1]);
-                        //System.out.println("Found new Base2");
+                        // System.out.println("Found new Base2");
                         break;
                     }
 
@@ -434,23 +435,7 @@ public class CompetitorAI extends AI
                         {
                             target = min(goodMoves, new ManhattanDistance(g
                                     .getBase().position()));
-                            path = Pathfinding.getPath(turn, cleat.position(),
-                                    target.position());
-                        }
-                        while (path.size() == 1)
-                        {
-                            goodMoves.remove(target);
-                            target = min(goodMoves, new ManhattanDistance(any(g
-                                    .getBase().coverage())));
-                            if (target == null)
-                            {
-                                path = new ArrayList<>();
-                                path.add(cleat.position());
-                                break;
-                            }
-                            path = Pathfinding.getPath(turn, cleat.position(),
-                                    target.position());
-
+                            path.add(target.position());
                         }
                         paths.put(cleat, path);
                     }
