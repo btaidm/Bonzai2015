@@ -67,6 +67,7 @@ public class CompetitorAI extends AI
                     if (numOfPitchers < 2)
                     {
                         numOfPitchers++;
+                        System.out.println("Spawning Pitcher");
                         perks.put(unit, Perk.PITCHER);
                     } else
                     {
@@ -77,7 +78,7 @@ public class CompetitorAI extends AI
                 case 5:
                 case 6:
                 {
-                    if (numOfPitchers < 2)
+                    if (numOfPitchers <= 2)
                     {
                         numOfPitchers++;
                         perks.put(unit, Perk.PITCHER);
@@ -94,6 +95,7 @@ public class CompetitorAI extends AI
                 }
             }
         }
+        init = true;
     }
 
     /**
