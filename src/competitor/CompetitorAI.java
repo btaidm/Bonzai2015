@@ -378,36 +378,36 @@ public class CompetitorAI extends AI
                             .getBase()));
                     BaseGoal g = (BaseGoal) goal;
 
-                    Set<Position> basePoses = g.getBase().coverage();
-                    Set<Unit> enemyUnits = turn.enemyUnits();
-                    ArrayList<Position> positions = new ArrayList<>();
-                    for (Unit e : enemyUnits)
-                    {
-                        positions.add(e.position());
-                    }
-
-                    Set<Position> eOnB = Utility
-                            .intersect(positions, basePoses);
-
-                    if (!eOnB.isEmpty() || eOnB.size() != 0)
-                    {
-                        // System.out.println("New Base needed");
-                        Collection<Base> bases = turn.allBases();
-                        bases = Utility.filter(bases, new Owned(turn.myTeam()));
-
-                        bases = Utility.ordered(bases, new ManhattanDistance(
-                                cleat));
-
-                        if (bases.isEmpty())
-                        {
-                            action = new ShoutAction("No uncaptured Bases");
-                            break;
-                        }
-                        // System.out.println("Found new Base1");
-                        goal = new BaseGoal((Base) bases.toArray()[1]);
-                        // System.out.println("Found new Base2");
-                        break;
-                    }
+//                    Set<Position> basePoses = g.getBase().coverage();
+//                    Set<Unit> enemyUnits = turn.enemyUnits();
+//                    ArrayList<Position> positions = new ArrayList<>();
+//                    for (Unit e : enemyUnits)
+//                    {
+//                        positions.add(e.position());
+//                    }
+//
+//                    Set<Position> eOnB = Utility
+//                            .intersect(positions, basePoses);
+//
+//                    if (!eOnB.isEmpty() || eOnB.size() != 0)
+//                    {
+//                        // System.out.println("New Base needed");
+//                        Collection<Base> bases = turn.allBases();
+//                        bases = Utility.filter(bases, new Owned(turn.myTeam()));
+//
+//                        bases = Utility.ordered(bases, new ManhattanDistance(
+//                                cleat));
+//
+//                        if (bases.isEmpty())
+//                        {
+//                            action = new ShoutAction("No uncaptured Bases");
+//                            break;
+//                        }
+//                        // System.out.println("Found new Base1");
+//                        goal = new BaseGoal((Base) bases.toArray()[1]);
+//                        // System.out.println("Found new Base2");
+//                        break;
+//                    }
 
                     Tile currentTile = turn.tileAt(cleat);
                     if (turn.hasBaseAt(currentTile)
