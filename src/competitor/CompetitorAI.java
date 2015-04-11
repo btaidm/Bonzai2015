@@ -177,13 +177,14 @@ public class CompetitorAI extends AI
                         goal = new FightGoal(enemy);
                         break;
                     }
-                    break;
+                    
                 }
                 case BASE:
                     break;
                 case DEFEND:
                     break;
                 case FIGHT:
+                {
                     System.out.println("PITCHER: FIGHTING");
                     if (pitcher.snowballs() == 0)
                     {
@@ -215,6 +216,7 @@ public class CompetitorAI extends AI
                         newPos = paths.get(pitcher).remove(0);
                     action = new MoveAction(newPos);
                     break;
+                }
                 case GATHER:
                 {
                     System.out.println("PITCHER: GATHERING SNOW");
