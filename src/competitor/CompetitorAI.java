@@ -1,26 +1,38 @@
 package competitor;
 
 import static snowbound.api.util.Utility.any;
-import static snowbound.api.util.Utility.difference;
-import static snowbound.api.util.Utility.min;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+
+import snowbound.api.AI;
+import snowbound.api.Action;
+import snowbound.api.Agent;
+import snowbound.api.Base;
+import snowbound.api.CaptureAction;
+import snowbound.api.GatherAction;
+import snowbound.api.MoveAction;
+import snowbound.api.Pathfinding;
+import snowbound.api.Perk;
+import snowbound.api.Position;
+import snowbound.api.SpawnAction;
+import snowbound.api.Stat;
+import snowbound.api.ThrowAction;
+import snowbound.api.Tile;
+import snowbound.api.Turn;
+import snowbound.api.Unit;
+import snowbound.api.util.ManhattanDistance;
+import snowbound.api.util.Owned;
+import snowbound.api.util.TileHasSnow;
+import snowbound.api.util.Utility;
 
 import competitor.util.BaseGoal;
 import competitor.util.EmptyGoal;
 import competitor.util.FightGoal;
 import competitor.util.GatherGoal;
 import competitor.util.Goal;
-import snowbound.api.*;
-import snowbound.api.util.ManhattanDistance;
-import snowbound.api.util.Owned;
-import snowbound.api.util.Predicate;
-import snowbound.api.util.TileHasSnow;
-import snowbound.api.util.Utility;
 
 @Agent(name = "Headcrabs")
 public class CompetitorAI extends AI
