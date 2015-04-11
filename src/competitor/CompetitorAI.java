@@ -11,11 +11,14 @@ import java.util.Set;
 
 import competitor.util.BaseGoal;
 import competitor.util.EmptyGoal;
+import competitor.util.FightGoal;
+import competitor.util.GatherGoal;
 import competitor.util.Goal;
 import snowbound.api.*;
 import snowbound.api.util.ManhattanDistance;
 import snowbound.api.util.Owned;
 import snowbound.api.util.Predicate;
+import snowbound.api.util.TileHasSnow;
 import snowbound.api.util.Utility;
 
 @Agent(name = "Headcrabs")
@@ -47,10 +50,48 @@ public class CompetitorAI extends AI
         if (init)
             return;
         maxUnits = turn.myUnits().size();
-
         for (Unit unit : turn.roster())
         {
-            perks.put(unit, Perk.CLEATS);
+            switch (maxUnits)
+            {
+                case 1:
+                case 2:
+                {
+                    perks.put(unit, Perk.CLEATS);
+                    break;
+                }
+                case 3:
+                case 4:
+                {
+                    if (numOfPitchers < 2)
+                    {
+                        numOfPitchers++;
+                        perks.put(unit, Perk.PITCHER);
+                    } else
+                    {
+                        perks.put(unit, Perk.CLEATS);
+                    }
+                    break;
+                }
+                case 5:
+                case 6:
+                {
+                    if (numOfPitchers < 2)
+                    {
+                        numOfPitchers++;
+                        perks.put(unit, Perk.PITCHER);
+                    } else
+                    {
+                        perks.put(unit, Perk.CLEATS);
+                    }
+                    break;
+                }
+                default:
+                {
+                    perks.put(unit, Perk.CLEATS);
+                    break;
+                }
+            }
         }
     }
 
@@ -99,6 +140,92 @@ public class CompetitorAI extends AI
         goals.put(player, new EmptyGoal());
         return new SpawnAction(any(turn.myTeam().spawns()), perks.get(player));
 
+    }
+
+    private Action pitcherMovement(Unit pitcher, Turn turn)
+    {
+        Goal goal = goals.get(pitcher);
+        Action action = null;
+        while (action == null)
+        {
+            switch (goal.getGoal())
+            {
+                case NONE:
+                {
+                    if (pitcher.snowballs() < Unit.statistic(Stat.CAPACITY,
+                            Perk.PITCHER))
+                    {
+                        Tile snow = Utility
+                                .nearest(Utility.retain(turn.tiles(),
+                                        new TileHasSnow()), pitcher);
+                        goal = new GatherGoal(snow);
+                        break;
+                    } else
+                    {
+                        goal = new FightGoal();
+                    }
+                    break;
+                }
+                case BASE:
+                    break;
+                case DEFEND:
+                    break;
+                case FIGHT:
+                    return null;
+                    //break;
+                case GATHER:
+                {
+                    GatherGoal g = new GatherGoal(
+                            turn.current(((GatherGoal) goal).getTile()));
+                    if (pitcher.snowballs() >= Unit.statistic(Stat.CAPACITY,
+                            Perk.PITCHER))
+                    {
+                        goal = new FightGoal();
+                        break;
+                    }
+                    Tile currentTile = turn.tileAt(pitcher);
+                    Tile endTile = g.getTile();
+                    if (currentTile.snow() > 0)
+                    {
+                        action = new GatherAction();
+                        break;
+                    }
+                    if (pitcher.position().equals(endTile.position()))
+                    {
+                        if (endTile.snow() > 0)
+                        {
+                            action = new GatherAction();
+                            break;
+                        } else
+                        {
+                            goal = new EmptyGoal();
+                            break;
+                        }
+                    }
+
+                    if (!paths.containsKey(pitcher) || turnCount % 3 == 0
+                            || paths.get(pitcher).isEmpty())
+                    {
+                        List<Position> path = Pathfinding.getPath(turn,
+                                pitcher.position(), endTile.position());
+                        paths.put(pitcher, path);
+                    }
+                    Position newPos = null;
+
+                    int pathlength = paths.get(pitcher).size();
+                    for (int i = 0; i < Unit.statistic(Stat.MOVE,
+                            pitcher.perk())
+                            && i < pathlength; i++)
+                        newPos = paths.get(pitcher).remove(0);
+                    action = new MoveAction(newPos);
+                    break;
+                }
+                default:
+                    return null;
+
+            }
+        }
+        return action;
     }
 
     private Action cleatMovement(Unit cleat, Turn turn)
@@ -154,7 +281,7 @@ public class CompetitorAI extends AI
 
                     Set<Base> nonCapBase = Utility.filter(turn.allBases(),
                             new Owned(turn.myTeam()));
-                    
+
                     if (nonCapBase.isEmpty())
                         return null;
 
