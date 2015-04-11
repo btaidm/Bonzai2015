@@ -22,17 +22,18 @@ import snowbound.api.util.Utility;
 public class CompetitorAI extends AI
 {
 
-    private boolean             init          = false;
+    private boolean                       init          = false;
 
-    private int                 maxUnits;
+    private int                           maxUnits;
 
-    private int                 numOfCleats   = 0;
-    private int                 numOfBucket   = 0;
-    private int                 numOfPitchers = 0;
+    private int                           numOfCleats   = 0;
+    private int                           numOfBucket   = 0;
+    private int                           numOfPitchers = 0;
 
-    private HashMap<Unit, Goal> goals;
-    private HashMap<Unit, Perk> perks;
+    private HashMap<Unit, Goal>           goals;
+    private HashMap<Unit, Perk>           perks;
     private HashMap<Unit, List<Position>> paths;
+    private int                           turnCount     = 0;
 
     public CompetitorAI()
     {
@@ -59,7 +60,7 @@ public class CompetitorAI extends AI
     public Action action(Turn turn)
     {
         setup(turn);
-
+        turnCount = turn.turns();
         Unit player = turn.actor();
         Action action = null;
 
@@ -99,18 +100,48 @@ public class CompetitorAI extends AI
         return new SpawnAction(any(turn.myTeam().spawns()), perks.get(player));
 
     }
-    
+
     private Action cleatMovement(Unit cleat, Turn turn)
     {
         Goal goal = goals.get(cleat);
-        switch(goal.getGoal())
+        switch (goal.getGoal())
         {
             case BASE:
             {
-                Position newPos = null;
-                for(int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk()); i++)
-                    newPos = paths.get(cleat).remove(0);
-                return new MoveAction(newPos);
+                Base b = turn.baseAt(cleat.position());
+                if (b != null && b.isOwnedBy(turn.myTeam()))
+                    b = null;
+
+                if (b != null)
+                {
+                    Action action = new CaptureAction();
+                    if (b.equals(((BaseGoal) goal).getBase()))
+                        goals.put(cleat, new EmptyGoal());
+                    return action;
+                } else
+                {
+                    if (turnCount % 3 == 0)
+                    {
+                        List<Position> path = Pathfinding.getPath(turn, cleat
+                                .position(), ((BaseGoal) goal).getBase()
+                                .position());
+                        paths.put(cleat, path);
+                    }
+                    Position newPos = null;
+
+                    try
+                    {
+                        int pathlength = paths.get(cleat).size();
+                        for (int i = 0; i < Unit.statistic(Stat.MOVE,
+                                cleat.perk())
+                                && i < pathlength; i++)
+                            newPos = paths.get(cleat).remove(0);
+                        return new MoveAction(newPos);
+                    } catch (Exception e)
+                    {
+                        return new ShoutAction(e.toString());
+                    }
+                }
             }
             case DEFEND:
                 break;
@@ -118,20 +149,40 @@ public class CompetitorAI extends AI
                 break;
             case NONE:
             {
-                Set<Base> nonCapBase = Utility.filter(turn.allBases(), new Owned(turn.myTeam()));
-                List<Base> sortBase = Utility.ordered(nonCapBase, new ManhattanDistance(cleat.position()));
-                Goal g = new BaseGoal(sortBase.get(1));
+                Set<Base> nonCapBase = Utility.filter(turn.allBases(),
+                        new Owned(turn.myTeam()));
+                if (nonCapBase.isEmpty())
+                    break;
+
+                List<Base> sortBase = Utility.ordered(nonCapBase,
+                        new ManhattanDistance(cleat.position()));
+                Goal g = null;
+
+                if (sortBase.size() > 1)
+                    g = new BaseGoal(sortBase.get(1));
+                else
+                    g = new BaseGoal(sortBase.get(0));
+
                 goals.put(cleat, g);
-                List<Position> path = Pathfinding.getPath(turn, cleat.position(), ((BaseGoal)g).getBase().position());
+                List<Position> path = Pathfinding.getPath(turn,
+                        cleat.position(), ((BaseGoal) g).getBase().position());
                 paths.put(cleat, path);
                 Position newPos = null;
-                for(int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk()); i++)
-                    newPos = paths.get(cleat).remove(0);
-                return new MoveAction(newPos);
+                try
+                {
+                    int pathlength = paths.get(cleat).size();
+                    for (int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk())
+                            && i < pathlength; i++)
+                        newPos = paths.get(cleat).remove(0);
+                    return new MoveAction(newPos);
+                } catch (Exception e)
+                {
+                    return new ShoutAction(e.toString());
+                }
             }
             default:
                 break;
-            
+
         }
         return null;
     }
