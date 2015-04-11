@@ -104,29 +104,73 @@ public class CompetitorAI extends AI
     private Action cleatMovement(Unit cleat, Turn turn)
     {
         Goal goal = goals.get(cleat);
-        switch (goal.getGoal())
+        while (true)
         {
-            case BASE:
+            switch (goal.getGoal())
             {
-                Base b = turn.baseAt(cleat.position());
-                if (b != null && b.isOwnedBy(turn.myTeam()))
-                    b = null;
+                case BASE:
+                {
 
-                if (b != null)
-                {
-                    Action action = new CaptureAction();
-                    if (b.equals(((BaseGoal) goal).getBase()))
-                        goals.put(cleat, new EmptyGoal());
-                    return action;
-                } else
-                {
-                    if (turnCount % 3 == 0 || paths.get(cleat).isEmpty())
+                    Base b = turn.baseAt(cleat.position());
+                    if (((BaseGoal) goal).getBase().isOwnedBy(turn.myTeam()))
                     {
-                        List<Position> path = Pathfinding.getPath(turn, cleat
-                                .position(), ((BaseGoal) goal).getBase()
-                                .position());
-                        paths.put(cleat, path);
+                        goals.put(cleat, new EmptyGoal());
                     }
+                    if (b != null && !b.isOwnedBy(turn.myTeam()))
+                    {
+                        Action action = new CaptureAction();
+                        if (b.equals(((BaseGoal) goal).getBase()))
+                            goals.put(cleat, new EmptyGoal());
+                        return action;
+                    } else
+                    {
+                        if (turnCount % 3 == 0 || paths.get(cleat).isEmpty())
+                        {
+                            List<Position> path = Pathfinding.getPath(turn,
+                                    cleat.position(), ((BaseGoal) goal)
+                                            .getBase().position());
+                            paths.put(cleat, path);
+                        }
+                        Position newPos = null;
+
+                        int pathlength = paths.get(cleat).size();
+                        for (int i = 0; i < Unit.statistic(Stat.MOVE,
+                                cleat.perk())
+                                && i < pathlength; i++)
+                            newPos = paths.get(cleat).remove(0);
+                        return new MoveAction(newPos);
+
+                    }
+                }
+                case DEFEND:
+                    return null;
+                case FIGHT:
+                    return null;
+                case NONE:
+                {
+                    Base b = turn.baseAt(cleat.position());
+                    if (b != null && !b.isOwnedBy(turn.myTeam()))
+                        return new CaptureAction();
+
+                    Set<Base> nonCapBase = Utility.filter(turn.allBases(),
+                            new Owned(turn.myTeam()));
+                    
+                    if (nonCapBase.isEmpty())
+                        return null;
+
+                    List<Base> sortBase = Utility.ordered(nonCapBase,
+                            new ManhattanDistance(cleat.position()));
+                    Goal g = null;
+
+                    if (sortBase.size() > 1)
+                        g = new BaseGoal(sortBase.get(1));
+                    else
+                        g = new BaseGoal(sortBase.get(0));
+
+                    goals.put(cleat, g);
+                    List<Position> path = Pathfinding.getPath(turn, cleat
+                            .position(), ((BaseGoal) g).getBase().position());
+                    paths.put(cleat, path);
                     Position newPos = null;
 
                     int pathlength = paths.get(cleat).size();
@@ -136,45 +180,12 @@ public class CompetitorAI extends AI
                     return new MoveAction(newPos);
 
                 }
-            }
-            case DEFEND:
-                break;
-            case FIGHT:
-                break;
-            case NONE:
-            {
-                Set<Base> nonCapBase = Utility.filter(turn.allBases(),
-                        new Owned(turn.myTeam()));
-                if (nonCapBase.isEmpty())
-                    break;
-
-                List<Base> sortBase = Utility.ordered(nonCapBase,
-                        new ManhattanDistance(cleat.position()));
-                Goal g = null;
-
-                if (sortBase.size() > 1)
-                    g = new BaseGoal(sortBase.get(1));
-                else
-                    g = new BaseGoal(sortBase.get(0));
-
-                goals.put(cleat, g);
-                List<Position> path = Pathfinding.getPath(turn,
-                        cleat.position(), ((BaseGoal) g).getBase().position());
-                paths.put(cleat, path);
-                Position newPos = null;
-
-                int pathlength = paths.get(cleat).size();
-                for (int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk())
-                        && i < pathlength; i++)
-                    newPos = paths.get(cleat).remove(0);
-                return new MoveAction(newPos);
+                default:
+                    return null;
 
             }
-            default:
-                break;
-
         }
-        return null;
+
     }
 
 }
