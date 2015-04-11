@@ -123,6 +123,7 @@ public class CompetitorAI extends AI
             case NONE:
                 break;
             case PITCHER:
+                action = pitcherMovement(player, turn);
                 break;
             default:
                 break;
