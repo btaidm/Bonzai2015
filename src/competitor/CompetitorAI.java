@@ -152,6 +152,7 @@ public class CompetitorAI extends AI
             {
                 case NONE:
                 {
+                    System.out.println("PITCHER: Doing Nothing");
                     if (pitcher.snowballs() < Unit.statistic(Stat.CAPACITY,
                             Perk.PITCHER))
                     {
@@ -171,10 +172,12 @@ public class CompetitorAI extends AI
                 case DEFEND:
                     break;
                 case FIGHT:
+                    System.out.println("PITCHER: FIGHTING");
                     return null;
                     //break;
                 case GATHER:
                 {
+                    System.out.println("PITCHER: GATHERING SNOW");
                     GatherGoal g = new GatherGoal(
                             turn.current(((GatherGoal) goal).getTile()));
                     if (pitcher.snowballs() >= Unit.statistic(Stat.CAPACITY,
