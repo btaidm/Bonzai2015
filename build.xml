@@ -11,12 +11,15 @@
 		<compile source = "" files = "**">
 			<external><classpath refid = "snowbound.classpath"/></external>
 		</compile>
-		<build jar = "ais/Competitor.jar" source = "./" main = "" />
+		<delete file = "bonzai2015/ais/Competitor.jar" />
+		<build jar = "Competitor.jar" source = "./" main = "" />
+		<move file = "bonzai2015/Competitor.jar" tofile = "bonzai2015/ais/Competitor.jar"/>
 	</target>
 	
 	
 	<!-- Run Target(s) -->
 	<target name="run">
-		<java jar = "${package}/snowbound.jar" fork = "true" dir = "${package}"  />
+		<java jar = "${package}/snowbound.jar" fork = "true" dir = "${package}">
+		</java>
 	</target>
 </project>

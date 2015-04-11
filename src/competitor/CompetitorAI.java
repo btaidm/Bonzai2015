@@ -1,7 +1,9 @@
 package competitor;
 
 import static snowbound.api.util.Utility.any;
+import static snowbound.api.util.Utility.min;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -17,17 +19,19 @@ import snowbound.api.MoveAction;
 import snowbound.api.Pathfinding;
 import snowbound.api.Perk;
 import snowbound.api.Position;
+import snowbound.api.ShoutAction;
 import snowbound.api.SpawnAction;
 import snowbound.api.Stat;
 import snowbound.api.ThrowAction;
 import snowbound.api.Tile;
 import snowbound.api.Turn;
 import snowbound.api.Unit;
+import snowbound.api.util.BaseHasOwner;
 import snowbound.api.util.ManhattanDistance;
 import snowbound.api.util.Owned;
 import snowbound.api.util.TileHasSnow;
+import snowbound.api.util.TileIsPassable;
 import snowbound.api.util.Utility;
-
 import competitor.util.BaseGoal;
 import competitor.util.EmptyGoal;
 import competitor.util.FightGoal;
@@ -45,6 +49,7 @@ public class CompetitorAI extends AI
     private int                           numOfCleats   = 0;
     private int                           numOfBucket   = 0;
     private int                           numOfPitchers = 0;
+    private int                           numOfLayers   = 0;
 
     private HashMap<Unit, Goal>           goals;
     private HashMap<Unit, Perk>           perks;
@@ -63,7 +68,7 @@ public class CompetitorAI extends AI
         if (init)
             return;
         maxUnits = turn.myUnits().size();
-        System.err.println("MAX UNITS: " + maxUnits);
+        //System.err.println("MAX UNITS: " + maxUnits);
         Collection<Unit> myRoster = Utility.intersect(turn.roster(),
                 turn.myUnits());
         for (Unit unit : myRoster)
@@ -79,10 +84,16 @@ public class CompetitorAI extends AI
                 case 3:
                 case 4:
                 {
-                    if (numOfPitchers < 2)
+                    // if (numOfPitchers < 1)
+                    // {
+                    // numOfPitchers++;
+                    // //System.out.println("Spawning LAYERS");
+                    // perks.put(unit, Perk.PITCHER);
+                    // } else
+                    if (numOfLayers < 1)
                     {
-                        numOfPitchers++;
-                        System.out.println("Spawning LAYERS");
+                        numOfLayers++;
+                        ////System.out.println("Spawning LAYERS");
                         perks.put(unit, Perk.LAYERS);
                     } else
                     {
@@ -93,7 +104,7 @@ public class CompetitorAI extends AI
                 case 5:
                 case 6:
                 {
-                    if (numOfPitchers <= 2)
+                    if (numOfPitchers <= 1)
                     {
                         numOfPitchers++;
                         perks.put(unit, Perk.LAYERS);
@@ -158,9 +169,12 @@ public class CompetitorAI extends AI
         if (player.isSpawned())
             return null;
 
-        System.err.println(perks.get(player).toString());
+        ////System.err.println(perks.get(player).toString());
         goals.put(player, new EmptyGoal());
-        return new SpawnAction(any(turn.myTeam().spawns()), perks.get(player));
+        Collection<Tile> spawns = Utility.retain(
+                turn.tilesAt(turn.myTeam().spawns()), new TileIsPassable(turn));
+
+        return new SpawnAction(any(spawns).position(), perks.get(player));
 
     }
 
@@ -174,13 +188,14 @@ public class CompetitorAI extends AI
             {
                 case NONE:
                 {
-                    System.out.println("PITCHER: Doing Nothing");
+                    // //System.out.println("PITCHER: Doing Nothing");
                     if (pitcher.snowballs() < Unit.statistic(Stat.CAPACITY,
-                            Perk.PITCHER))
+                            pitcher.perk()))
                     {
-                        Tile snow = Utility
-                                .nearest(Utility.retain(turn.tiles(),
-                                        new TileHasSnow()), pitcher);
+                        Tile snow = Utility.nearest(
+                                Utility.retain(Utility.retain(turn.tiles(),
+                                        new TileHasSnow()), new TileIsPassable(
+                                        turn)), pitcher);
                         goal = new GatherGoal(snow);
                         break;
                     } else
@@ -200,7 +215,7 @@ public class CompetitorAI extends AI
                     break;
                 case FIGHT:
                 {
-                    System.out.println("PITCHER: FIGHTING");
+                    // //System.out.println("PITCHER: FIGHTING");
                     if (pitcher.snowballs() == 0)
                     {
                         goal = new EmptyGoal();
@@ -210,6 +225,7 @@ public class CompetitorAI extends AI
                     // Attack in range
                     FightGoal g = new FightGoal(turn.current(((FightGoal) goal)
                             .getUnit()));
+                    goal = g;
                     Set<Unit> inRange = pitcher.enemyUnitsInThrowRange();
                     if (!inRange.isEmpty())
                     {
@@ -233,6 +249,7 @@ public class CompetitorAI extends AI
                     if (!paths.containsKey(pitcher) || turnCount % 3 == 0
                             || paths.get(pitcher).isEmpty())
                     {
+
                         List<Position> path = Pathfinding.getPath(turn,
                                 pitcher.position(), g.getUnit().position());
                         paths.put(pitcher, path);
@@ -249,21 +266,25 @@ public class CompetitorAI extends AI
                 }
                 case GATHER:
                 {
-                    System.out.println("PITCHER: GATHERING SNOW");
+                    // //System.out.println("PITCHER: GATHERING SNOW");
                     GatherGoal g = new GatherGoal(
                             turn.current(((GatherGoal) goal).getTile()));
-                    if (pitcher.snowballs() >= Unit.statistic(Stat.CAPACITY,
-                            Perk.PITCHER))
+                    if (pitcher.snowballs() == Unit.statistic(Stat.CAPACITY,
+                            pitcher.perk()))
                     {
+                        // //System.out.println(pitcher);
                         Unit enemy = Utility
                                 .nearest(turn.enemyUnits(), pitcher);
+
                         goal = new FightGoal(enemy);
                         break;
                     }
-                    boolean enemysnear = !pitcher.enemyUnitsInMoveRange().isEmpty();
+                    boolean enemysnear = !pitcher.enemyUnitsInMoveRange()
+                            .isEmpty();
                     Tile currentTile = turn.tileAt(pitcher);
 
-                    if (!enemysnear && turn.hasBaseAt(currentTile)
+                    if (!enemysnear
+                            && turn.hasBaseAt(currentTile)
                             && !turn.baseAt(currentTile).isOwnedBy(
                                     turn.myTeam()))
                     {
@@ -273,6 +294,11 @@ public class CompetitorAI extends AI
                     }
 
                     Tile endTile = g.getTile();
+                    if (endTile == null)
+                    {
+                        action = new ShoutAction("Tile no exist");
+                        break;
+                    }
                     if (currentTile.snow() > 0)
                     {
                         action = new GatherAction();
@@ -322,88 +348,137 @@ public class CompetitorAI extends AI
     private Action cleatMovement(Unit cleat, Turn turn)
     {
         Goal goal = goals.get(cleat);
-        while (true)
+        Action action = null;
+        while (action == null)
         {
             switch (goal.getGoal())
             {
-                case BASE:
-                {
-
-                    Base b = turn.baseAt(cleat.position());
-                    if (((BaseGoal) goal).getBase().isOwnedBy(turn.myTeam()))
-                    {
-                        goals.put(cleat, new EmptyGoal());
-                    }
-                    if (b != null && !b.isOwnedBy(turn.myTeam()))
-                    {
-                        Action action = new CaptureAction();
-                        if (b.equals(((BaseGoal) goal).getBase()))
-                            goals.put(cleat, new EmptyGoal());
-                        return action;
-                    } else
-                    {
-                        if (turnCount % 3 == 0 || paths.get(cleat).isEmpty())
-                        {
-                            List<Position> path = Pathfinding.getPath(turn,
-                                    cleat.position(), ((BaseGoal) goal)
-                                            .getBase().position());
-                            paths.put(cleat, path);
-                        }
-                        Position newPos = null;
-
-                        int pathlength = paths.get(cleat).size();
-                        for (int i = 0; i < Unit.statistic(Stat.MOVE,
-                                cleat.perk())
-                                && i < pathlength; i++)
-                            newPos = paths.get(cleat).remove(0);
-                        return new MoveAction(newPos);
-
-                    }
-                }
-                case DEFEND:
-                    return null;
-                case FIGHT:
-                    return null;
                 case NONE:
                 {
-                    Base b = turn.baseAt(cleat.position());
-                    if (b != null && !b.isOwnedBy(turn.myTeam()))
-                        return new CaptureAction();
+                    Collection<Base> bases = turn.allBases();
+                    bases = Utility.filter(bases, new Owned(turn.myTeam()));
 
-                    Set<Base> nonCapBase = Utility.filter(turn.allBases(),
-                            new Owned(turn.myTeam()));
+                    bases = Utility
+                            .ordered(bases, new ManhattanDistance(cleat));
 
-                    if (nonCapBase.isEmpty())
-                        return null;
+                    if (bases.isEmpty())
+                    {
+                        action = new ShoutAction("No uncaptured Bases");
+                        break;
+                    }
 
-                    List<Base> sortBase = Utility.ordered(nonCapBase,
-                            new ManhattanDistance(cleat.position()));
-                    Goal g = null;
+                    goal = new BaseGoal((Base) bases.toArray()[0]);
 
-                    if (sortBase.size() > 1)
-                        g = new BaseGoal(sortBase.get(1));
-                    else
-                        g = new BaseGoal(sortBase.get(0));
+                    break;
+                }
+                case BASE:
+                {
+                    goal = new BaseGoal(turn.current(((BaseGoal) goal)
+                            .getBase()));
+                    BaseGoal g = (BaseGoal) goal;
 
-                    goals.put(cleat, g);
-                    List<Position> path = Pathfinding.getPath(turn, cleat
-                            .position(), ((BaseGoal) g).getBase().position());
-                    paths.put(cleat, path);
+                    Set<Position> basePoses = g.getBase().coverage();
+                    Set<Unit> enemyUnits = turn.enemyUnits();
+                    ArrayList<Position> positions = new ArrayList<>();
+                    for (Unit e : enemyUnits)
+                    {
+                        positions.add(e.position());
+                    }
+
+                    Set<Position> eOnB = Utility
+                            .intersect(positions, basePoses);
+
+                    if (!eOnB.isEmpty() || eOnB.size() != 0)
+                    {
+                        //System.out.println("New Base needed");
+                        Collection<Base> bases = turn.allBases();
+                        bases = Utility.filter(bases, new Owned(turn.myTeam()));
+
+                        bases = Utility.ordered(bases, new ManhattanDistance(
+                                cleat));
+
+                        if (bases.isEmpty())
+                        {
+                            action = new ShoutAction("No uncaptured Bases");
+                            break;
+                        }
+                        //System.out.println("Found new Base1");
+                        goal = new BaseGoal((Base) bases.toArray()[1]);
+                        //System.out.println("Found new Base2");
+                        break;
+                    }
+
+                    Tile currentTile = turn.tileAt(cleat);
+                    if (turn.hasBaseAt(currentTile)
+                            && !turn.baseAt(currentTile).isOwnedBy(
+                                    turn.myTeam()))
+                    {
+
+                        action = new CaptureAction();
+                        if (turn.baseAt(currentTile).equals(g.getBase()))
+                            goal = new EmptyGoal();
+                        break;
+
+                    }
+
+                    if (!paths.containsKey(cleat) || turnCount % 3 == 0
+                            || paths.get(cleat).isEmpty())
+                    {
+                        List<Position> path = Pathfinding.getPath(turn,
+                                cleat.position(), any(g.getBase().coverage()));
+                        Set<Tile> goodMoves = Utility.retain(
+                                turn.tilesAt(cleat.positionsInMoveRange()),
+                                new TileIsPassable(turn));
+                        Tile target = null;
+                        if (path.size() == 1)
+                        {
+                            target = min(goodMoves, new ManhattanDistance(g
+                                    .getBase().position()));
+                            path = Pathfinding.getPath(turn, cleat.position(),
+                                    target.position());
+                        }
+                        while (path.size() == 1)
+                        {
+                            goodMoves.remove(target);
+                            target = min(goodMoves, new ManhattanDistance(any(g
+                                    .getBase().coverage())));
+                            if (target == null)
+                            {
+                                path = new ArrayList<>();
+                                path.add(cleat.position());
+                                break;
+                            }
+                            path = Pathfinding.getPath(turn, cleat.position(),
+                                    target.position());
+
+                        }
+                        paths.put(cleat, path);
+                    }
+
                     Position newPos = null;
 
                     int pathlength = paths.get(cleat).size();
                     for (int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk())
                             && i < pathlength; i++)
-                        newPos = paths.get(cleat).remove(0);
-                    return new MoveAction(newPos);
+                    {
+                        Position testPos = paths.get(cleat).get(0);
+                        if (new TileIsPassable(turn).eval(turn.tileAt(testPos))
+                                || testPos.equals(cleat.position()))
+                        {
+                            newPos = paths.get(cleat).remove(0);
+                        }
+                    }
 
+                    action = new MoveAction(newPos);
+
+                    break;
                 }
                 default:
-                    return null;
+                    break;
 
             }
+            goals.put(cleat, goal);
         }
-
+        return action;
     }
-
 }
