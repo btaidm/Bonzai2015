@@ -189,9 +189,11 @@ public class CompetitorAI extends AI
                         goal = new FightGoal(enemy);
                         break;
                     }
-                    
+
                 }
                 case BASE:
+                    action = new CaptureAction();
+                    goal = new EmptyGoal();
                     break;
                 case DEFEND:
                     break;
@@ -203,6 +205,8 @@ public class CompetitorAI extends AI
                         goal = new EmptyGoal();
                         break;
                     }
+
+                    // Attack in range
                     FightGoal g = new FightGoal(turn.current(((FightGoal) goal)
                             .getUnit()));
                     Set<Unit> inRange = pitcher.enemyUnitsInThrowRange();
@@ -212,6 +216,19 @@ public class CompetitorAI extends AI
                         action = new ThrowAction(attack);
                         break;
                     }
+                    // Check for uncaptured base
+                    Tile currentTile = turn.tileAt(pitcher);
+
+                    if (turn.hasBaseAt(currentTile)
+                            && turn.baseAt(currentTile)
+                                    .isOwnedBy(turn.myTeam()))
+                    {
+                        goal = new BaseGoal(turn.baseAt(currentTile));
+
+                        break;
+                    }
+
+                    // Finally Move
                     if (!paths.containsKey(pitcher) || turnCount % 3 == 0
                             || paths.get(pitcher).isEmpty())
                     {
@@ -243,6 +260,16 @@ public class CompetitorAI extends AI
                         break;
                     }
                     Tile currentTile = turn.tileAt(pitcher);
+
+                    if (turn.hasBaseAt(currentTile)
+                            && turn.baseAt(currentTile)
+                                    .isOwnedBy(turn.myTeam()))
+                    {
+                        goal = new BaseGoal(turn.baseAt(currentTile));
+
+                        break;
+                    }
+
                     Tile endTile = g.getTile();
                     if (currentTile.snow() > 0)
                     {
