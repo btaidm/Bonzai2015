@@ -107,7 +107,9 @@ public class CompetitorAI extends AI
         {
             case BASE:
             {
-                Position newPos = paths.get(cleat).remove(0);
+                Position newPos = null;
+                for(int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk()); i++)
+                    newPos = paths.get(cleat).remove(0);
                 return new MoveAction(newPos);
             }
             case DEFEND:
@@ -122,7 +124,9 @@ public class CompetitorAI extends AI
                 goals.put(cleat, g);
                 List<Position> path = Pathfinding.getPath(turn, cleat.position(), ((BaseGoal)g).getBase().position());
                 paths.put(cleat, path);
-                Position newPos = paths.get(cleat).remove(0);
+                Position newPos = null;
+                for(int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk()); i++)
+                    newPos = paths.get(cleat).remove(0);
                 return new MoveAction(newPos);
             }
             default:
