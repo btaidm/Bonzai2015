@@ -5,7 +5,7 @@ public class FightGoal extends Goal
     
     public FightGoal()
     {
-        // TODO Auto-generated constructor stub
+        m_goal = GOAL.FIGHT;
     }
 
 }

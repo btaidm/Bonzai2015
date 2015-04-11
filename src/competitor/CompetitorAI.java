@@ -141,6 +141,7 @@ public class CompetitorAI extends AI
         if (player.isSpawned())
             return null;
 
+        System.err.println(perks.get(player).toString());
         goals.put(player, new EmptyGoal());
         return new SpawnAction(any(turn.myTeam().spawns()), perks.get(player));
 
