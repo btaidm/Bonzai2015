@@ -50,6 +50,7 @@ public class CompetitorAI extends AI
         if (init)
             return;
         maxUnits = turn.myUnits().size();
+        System.err.println("MAX UNITS: " + maxUnits);
         for (Unit unit : turn.roster())
         {
             switch (maxUnits)
