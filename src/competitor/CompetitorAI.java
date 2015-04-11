@@ -4,6 +4,7 @@ import static snowbound.api.util.Utility.any;
 import static snowbound.api.util.Utility.difference;
 import static snowbound.api.util.Utility.min;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,9 @@ public class CompetitorAI extends AI
             return;
         maxUnits = turn.myUnits().size();
         System.err.println("MAX UNITS: " + maxUnits);
-        for (Unit unit : turn.roster())
+        Collection<Unit> myRoster = Utility.intersect(turn.roster(),
+                turn.myUnits());
+        for (Unit unit : myRoster)
         {
             switch (maxUnits)
             {
@@ -138,6 +141,7 @@ public class CompetitorAI extends AI
 
     private Action spawn(Unit player, Turn turn)
     {
+
         if (player.isSpawned())
             return null;
 
@@ -168,7 +172,10 @@ public class CompetitorAI extends AI
                         break;
                     } else
                     {
-                        goal = new FightGoal();
+                        Unit enemy = Utility
+                                .nearest(turn.enemyUnits(), pitcher);
+                        goal = new FightGoal(enemy);
+                        break;
                     }
                     break;
                 }
@@ -178,8 +185,36 @@ public class CompetitorAI extends AI
                     break;
                 case FIGHT:
                     System.out.println("PITCHER: FIGHTING");
-                    return null;
-                    //break;
+                    if (pitcher.snowballs() == 0)
+                    {
+                        goal = new EmptyGoal();
+                        break;
+                    }
+                    FightGoal g = new FightGoal(turn.current(((FightGoal) goal)
+                            .getUnit()));
+                    Set<Unit> inRange = pitcher.enemyUnitsInThrowRange();
+                    if (!inRange.isEmpty())
+                    {
+                        Unit attack = any(inRange);
+                        action = new ThrowAction(attack);
+                        break;
+                    }
+                    if (!paths.containsKey(pitcher) || turnCount % 3 == 0
+                            || paths.get(pitcher).isEmpty())
+                    {
+                        List<Position> path = Pathfinding.getPath(turn,
+                                pitcher.position(), g.getUnit().position());
+                        paths.put(pitcher, path);
+                    }
+                    Position newPos = null;
+
+                    int pathlength = paths.get(pitcher).size();
+                    for (int i = 0; i < Unit.statistic(Stat.MOVE,
+                            pitcher.perk())
+                            && i < pathlength; i++)
+                        newPos = paths.get(pitcher).remove(0);
+                    action = new MoveAction(newPos);
+                    break;
                 case GATHER:
                 {
                     System.out.println("PITCHER: GATHERING SNOW");
@@ -188,7 +223,9 @@ public class CompetitorAI extends AI
                     if (pitcher.snowballs() >= Unit.statistic(Stat.CAPACITY,
                             Perk.PITCHER))
                     {
-                        goal = new FightGoal();
+                        Unit enemy = Utility
+                                .nearest(turn.enemyUnits(), pitcher);
+                        goal = new FightGoal(enemy);
                         break;
                     }
                     Tile currentTile = turn.tileAt(pitcher);
@@ -229,9 +266,12 @@ public class CompetitorAI extends AI
                     break;
                 }
                 default:
+                {
                     return null;
+                }
 
             }
+            goals.put(pitcher, goal);
         }
         return action;
     }
