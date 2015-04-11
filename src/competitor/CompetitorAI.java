@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import competitor.util.BaseGoal;
 import competitor.util.EmptyGoal;
 import competitor.util.Goal;
 import snowbound.api.*;
@@ -31,11 +32,13 @@ public class CompetitorAI extends AI
 
     private HashMap<Unit, Goal> goals;
     private HashMap<Unit, Perk> perks;
+    private HashMap<Unit, List<Position>> paths;
 
     public CompetitorAI()
     {
         this.goals = new HashMap<>();
         this.perks = new HashMap<>();
+        paths = new HashMap<>();
     }
 
     private void setup(Turn turn)
@@ -103,15 +106,25 @@ public class CompetitorAI extends AI
         switch(goal.getGoal())
         {
             case BASE:
-                break;
+            {
+                Position newPos = paths.get(cleat).remove(0);
+                return new MoveAction(newPos);
+            }
             case DEFEND:
                 break;
             case FIGHT:
                 break;
             case NONE:
+            {
                 Set<Base> nonCapBase = Utility.filter(turn.allBases(), new Owned(turn.myTeam()));
                 List<Base> sortBase = Utility.ordered(nonCapBase, new ManhattanDistance(cleat.position()));
-                break;
+                Goal g = new BaseGoal(sortBase.get(1));
+                goals.put(cleat, g);
+                List<Position> path = Pathfinding.getPath(turn, cleat.position(), ((BaseGoal)g).getBase().position());
+                paths.put(cleat, path);
+                Position newPos = paths.get(cleat).remove(0);
+                return new MoveAction(newPos);
+            }
             default:
                 break;
             
