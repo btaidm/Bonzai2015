@@ -82,8 +82,8 @@ public class CompetitorAI extends AI
                     if (numOfPitchers < 2)
                     {
                         numOfPitchers++;
-                        System.out.println("Spawning Pitcher");
-                        perks.put(unit, Perk.PITCHER);
+                        System.out.println("Spawning LAYERS");
+                        perks.put(unit, Perk.LAYERS);
                     } else
                     {
                         perks.put(unit, Perk.CLEATS);
@@ -96,7 +96,7 @@ public class CompetitorAI extends AI
                     if (numOfPitchers <= 2)
                     {
                         numOfPitchers++;
-                        perks.put(unit, Perk.PITCHER);
+                        perks.put(unit, Perk.LAYERS);
                     } else
                     {
                         perks.put(unit, Perk.CLEATS);
@@ -137,6 +137,7 @@ public class CompetitorAI extends AI
                 break;
             }
             case LAYERS:
+                action = pitcherMovement(player, turn);
                 break;
             case NONE:
                 break;
@@ -220,8 +221,8 @@ public class CompetitorAI extends AI
                     Tile currentTile = turn.tileAt(pitcher);
 
                     if (turn.hasBaseAt(currentTile)
-                            && turn.baseAt(currentTile)
-                                    .isOwnedBy(turn.myTeam()))
+                            && !turn.baseAt(currentTile).isOwnedBy(
+                                    turn.myTeam()))
                     {
                         goal = new BaseGoal(turn.baseAt(currentTile));
 
@@ -259,11 +260,12 @@ public class CompetitorAI extends AI
                         goal = new FightGoal(enemy);
                         break;
                     }
+                    boolean enemysnear = !pitcher.enemyUnitsInMoveRange().isEmpty();
                     Tile currentTile = turn.tileAt(pitcher);
 
-                    if (turn.hasBaseAt(currentTile)
-                            && turn.baseAt(currentTile)
-                                    .isOwnedBy(turn.myTeam()))
+                    if (!enemysnear && turn.hasBaseAt(currentTile)
+                            && !turn.baseAt(currentTile).isOwnedBy(
+                                    turn.myTeam()))
                     {
                         goal = new BaseGoal(turn.baseAt(currentTile));
 
