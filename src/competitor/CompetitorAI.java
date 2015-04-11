@@ -120,7 +120,7 @@ public class CompetitorAI extends AI
                     return action;
                 } else
                 {
-                    if (turnCount % 3 == 0)
+                    if (turnCount % 3 == 0 || paths.get(cleat).isEmpty())
                     {
                         List<Position> path = Pathfinding.getPath(turn, cleat
                                 .position(), ((BaseGoal) goal).getBase()
@@ -129,18 +129,12 @@ public class CompetitorAI extends AI
                     }
                     Position newPos = null;
 
-                    try
-                    {
-                        int pathlength = paths.get(cleat).size();
-                        for (int i = 0; i < Unit.statistic(Stat.MOVE,
-                                cleat.perk())
-                                && i < pathlength; i++)
-                            newPos = paths.get(cleat).remove(0);
-                        return new MoveAction(newPos);
-                    } catch (Exception e)
-                    {
-                        return new ShoutAction(e.toString());
-                    }
+                    int pathlength = paths.get(cleat).size();
+                    for (int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk())
+                            && i < pathlength; i++)
+                        newPos = paths.get(cleat).remove(0);
+                    return new MoveAction(newPos);
+
                 }
             }
             case DEFEND:
@@ -168,17 +162,13 @@ public class CompetitorAI extends AI
                         cleat.position(), ((BaseGoal) g).getBase().position());
                 paths.put(cleat, path);
                 Position newPos = null;
-                try
-                {
-                    int pathlength = paths.get(cleat).size();
-                    for (int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk())
-                            && i < pathlength; i++)
-                        newPos = paths.get(cleat).remove(0);
-                    return new MoveAction(newPos);
-                } catch (Exception e)
-                {
-                    return new ShoutAction(e.toString());
-                }
+
+                int pathlength = paths.get(cleat).size();
+                for (int i = 0; i < Unit.statistic(Stat.MOVE, cleat.perk())
+                        && i < pathlength; i++)
+                    newPos = paths.get(cleat).remove(0);
+                return new MoveAction(newPos);
+
             }
             default:
                 break;
